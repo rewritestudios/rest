@@ -12,12 +12,12 @@ export interface RESTOptions {
 	 */
 	timeout?: number;
 	/**
- 	* Headers to send with each request.
-  */
+	 * Headers to send with each request.
+	 */
 	headers?: Record<string, string>;
 	/**
- 	* Options to use when retrying failed requests.
-  */
+	 * Options to use when retrying failed requests.
+	 */
 	retry?: RetryOptions;
 }
 
@@ -39,8 +39,7 @@ export interface RetryOptions {
 /**
  * Options to use when sending a request to the API.
  */
-export interface FetchOptions
-	extends Pick<RESTOptions, 'headers' | 'timeout'> {
+export interface FetchOptions extends Pick<RESTOptions, 'headers' | 'timeout'> {
 	/**
 	 * Optional data to send in the request body (Stringified internally).
 	 */
@@ -78,4 +77,3 @@ export interface RewriteHandleErrorOptions {
 	response: Response;
 	options: FetchOptions;
 }
-	
