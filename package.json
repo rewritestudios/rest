@@ -25,7 +25,8 @@
 	"scripts": {
 		"test": "bun test",
 		"biome:check": "biome check --write .",
-		"build": "rm -rf dist && bun run scripts/version.ts && bun build src/index.ts --outdir dist --target node && bun run types",
+		"script:version": "bun run scripts/version.ts",
+		"build": "rm -rf dist && bun script:version && bun build src/index.ts --outdir dist --target node && bun run types",
 		"types": "bunx tsc --emitDeclarationOnly",
 		"prepublishOnly": "bun run build"
 	},
