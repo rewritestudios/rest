@@ -1,3 +1,6 @@
+/**
+ * Options to use in the REST class.
+ */
 export interface RESTOptions {
 	/**
 	 * Base URL to use in each request to the API.
@@ -21,6 +24,9 @@ export interface RESTOptions {
 	retry?: RetryOptions;
 }
 
+/**
+ * Options used to retry a request that failed.
+ */
 export interface RetryOptions {
 	/**
 	 * Maximum number of retries to attempt.
@@ -70,6 +76,11 @@ export type HTTPMethodLike =
 	| 'DELETE'
 	| (string & {});
 
+/**
+ * Options used when handling an error.
+ * 
+ * @internal
+ */
 export interface RewriteHandleErrorOptions {
 	method: string;
 	route: string;

@@ -13,7 +13,14 @@ import {
 } from './utils';
 
 export class REST {
+	/**
+	 * The options for the REST client.
+	 */
 	public options: RESTOptions;
+	
+	/**
+	 * The headers to send with each request.
+	 */
 	public headers = { 'Content-Type': 'application/json' } as Record<
 		string,
 		string
@@ -28,6 +35,11 @@ export class REST {
 		};
 	}
 
+	/**
+	 * Sets the API key for the REST client.
+	 * 
+	 * @param {string} authorization - The API key to use.
+	 */
 	setAuth(authorization: string) {
 		this.options.auth = authorization;
 		this.headers.Authorization = `Bearer ${authorization}`;
