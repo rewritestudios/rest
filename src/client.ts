@@ -12,6 +12,9 @@ import {
 	sleep,
 } from './utils';
 
+/**
+ * Main class to interact with the Rewrite API.
+ */
 export class REST {
 	/**
 	 * The options for the REST client.
