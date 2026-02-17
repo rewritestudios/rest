@@ -26,8 +26,8 @@
 		"test": "bun test",
 		"biome:check": "biome check --write .",
 		"script:version": "bun run scripts/version.ts",
-		"build": "rm -rf dist && bun script:version && bun build src/index.ts --outdir dist --target node && bun run types",
-		"types": "bunx tsc --emitDeclarationOnly",
+		"build": "rm -rf dist && bun run script:version && bun build src/index.ts --outdir dist --target node && bun run types",
+		"types": "bunx tsc",
 		"prepublishOnly": "bun run build"
 	},
 	"engines": {
