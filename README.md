@@ -113,6 +113,6 @@ try {
 
 <div align="center">
 
-You can view our documentation going [here](https://docs.userewrite.me/en/api-reference/errors). Thanks for using our REST Client!
+You can view our documentation going [here](https://docs.rewritetoday.com/en/api-reference/errors). Thanks for using our REST Client!
 
 </div>
