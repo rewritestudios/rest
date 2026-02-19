@@ -119,9 +119,7 @@ describe('REST', () => {
 
 		const client = new REST('api-key');
 
-		expect(client.post('/messages', {})).rejects.toBeInstanceOf(
-			RewriteError,
-		);
+		expect(client.post('/messages', {})).rejects.toBeInstanceOf(RewriteError);
 
 		try {
 			await client.post('/messages', {});
