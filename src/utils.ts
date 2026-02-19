@@ -3,7 +3,7 @@ import type { FetchOptions } from './types';
 export const createURL = (
 	route: string,
 	query?: FetchOptions['query'],
-	baseURL = 'https://api.userewrite.me',
+	baseURL = 'https://api.rewritetoday.com',
 ) => {
 	const url = `${baseURL}/v1${route}`;
 
@@ -35,3 +35,5 @@ export const backoff = (attempt: number) => {
 
 export const sleep = (ms: number) =>
 	new Promise((resolve) => setTimeout(resolve, ms));
+
+export const RATE_LIMIT_STATUS = 429;

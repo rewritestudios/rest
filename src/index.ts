@@ -1,12 +1,12 @@
 export { REST } from './client';
-
+export * from './errors';
 export {
-	RESTOptions,
-	RetryOptions,
 	FetchOptions,
-	HTTPMethodLike
+	HTTPMethodLike,
+	RateLimitContext,
+	RESTOptions,
+	RequestOptions,
+	RetryOptions,
 } from './types';
 
-export * from './errors';
-
-export { version, API_VERSION } from './version';
+export { API_VERSION, version } from './version';

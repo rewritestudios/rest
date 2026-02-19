@@ -22,6 +22,28 @@ export interface RESTOptions {
 	 * Options to use when retrying failed requests.
 	 */
 	retry?: RetryOptions;
+	/**
+	 * Callback executed when the API returns a rate limit response (`429`).
+	 */
+	onRateLimit?(context: RateLimitContext): unknown;
+}
+
+/**
+ * Context passed to the `onRateLimit` callback.
+ */
+export interface RateLimitContext {
+	/**
+	 * Total requests available for the current rate limit window.
+	 */
+	limit: number;
+	/**
+	 * Whether this limit was applied globally by the API.
+	 */
+	isGlobal: boolean;
+	/**
+	 * Time to wait in milliseconds before retrying.
+	 */
+	retryAfter: number;
 }
 
 /**
@@ -65,6 +87,11 @@ export interface FetchOptions extends Pick<RESTOptions, 'headers' | 'timeout'> {
 }
 
 /**
+ * Public request options for helpers like `get`, `post` and `delete`.
+ */
+export type RequestOptions = Omit<FetchOptions, 'data' | 'method'>;
+
+/**
  * Any HTTP method.
  */
 export type HTTPMethodLike =
@@ -78,7 +105,7 @@ export type HTTPMethodLike =
 
 /**
  * Options used when handling an error.
- * 
+ *
  * @internal
  */
 export interface RewriteHandleErrorOptions {
