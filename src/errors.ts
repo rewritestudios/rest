@@ -22,3 +22,13 @@ export class HTTPError extends Error {
 		this.name = `HTTPError(${status})`;
 	}
 }
+
+export class RewriteError extends Error {
+	public constructor(
+		public message: string,
+		public code: string,
+		public detailed: object,
+	) {
+		super(message)
+	}
+}

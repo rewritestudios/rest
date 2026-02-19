@@ -1,4 +1,4 @@
-import { HTTPError } from './errors';
+import { HTTPError, RewriteError } from './errors';
 import type {
 	FetchOptions,
 	RESTOptions,
@@ -86,7 +86,7 @@ export class REST {
 	}
 
 	private async fetch<R>(route: string, options: FetchOptions, attempt = 0) {
-		const response = await this.createRequest(route, options);
+		const response = await this.prefetch(route, options);
 
 		if (!response.ok)
 			return this.handleError<R>({
@@ -110,9 +110,9 @@ export class REST {
 		response,
 	}: RewriteHandleErrorOptions): Promise<R> {
 		if (!isRetryableStatus(response.status)) {
-			const { error } = await response.json();
+			const { code, error, message } = await response.json();
 
-			throw new HTTPError(error, response.status, response.url, method);
+			throw new RewriteError(message, code, error.detailed);
 		}
 
 		const { retry } = this.options;
@@ -124,6 +124,7 @@ export class REST {
 				response.url,
 				method,
 			);
+		
 		if (retry?.onRetry)
 			await retry.onRetry({ route, attempt, options, response, method });
 
@@ -134,7 +135,7 @@ export class REST {
 		return this.fetch<R>(route, options, attempt + 1);
 	}
 
-	private createRequest(route: string, options: FetchOptions) {
+	private prefetch(route: string, options: FetchOptions) {
 		const timeout =
 			options.timeout ?? this.options.timeout ?? FIVE_SECONDS_IN_MS;
 		const url = createURL(route, options.query, this.options.baseURL);
