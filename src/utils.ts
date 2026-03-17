@@ -3,7 +3,7 @@ import type { FetchOptions } from './types';
 export const createURL = (
 	route: string,
 	query?: FetchOptions['query'],
-	baseURL = 'https://api.rewritetoday.com',
+	baseURL = 'https://api.rewritetoday.com/v1',
 ) => {
 	const url = `${baseURL}/v1${route}`;
 
