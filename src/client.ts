@@ -15,6 +15,7 @@ import {
 	RATE_LIMIT_STATUS,
 	sleep,
 } from './utils';
+import { version } from './version';
 
 /**
  * Main class to interact with the Rewrite API.
@@ -28,10 +29,10 @@ export class REST {
 	/**
 	 * The headers to send with each request.
 	 */
-	public headers = { 'Content-Type': 'application/json' } as Record<
-		string,
-		string
-	>;
+	public headers = {
+		'Content-Type': 'application/json',
+		'User-Agent': `@rewritejs/rest (${version})`,
+	} as Record<string, string>;
 
 	constructor(options: RESTOptions | string) {
 		this.options = typeof options === 'string' ? { auth: options } : options;
