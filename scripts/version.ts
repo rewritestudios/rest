@@ -13,6 +13,7 @@ await writeFile(
  * Current version of [${name}](https://www.npmjs.com/package/${name}).
  */
 export const version = '${version}' as const;
+
 /**
  * Current version of the Rewrite API.
  */

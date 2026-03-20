@@ -1,19 +1,34 @@
 import type { FetchOptions } from './types';
+import { API_VERSION } from './version';
+
+const DEFAULT_BASE_URL = 'https://api.rewritetoday.com';
+const API_PATH = `/v${API_VERSION}`;
+
+const normalizeBaseURL = (baseURL: string) => {
+	let normalized = baseURL.endsWith('/') ? baseURL.slice(0, -1) : baseURL;
+
+	if (normalized.endsWith(API_PATH))
+		normalized = normalized.slice(0, -API_PATH.length);
+
+	return normalized;
+};
 
 export const createURL = (
 	route: string,
 	query?: FetchOptions['query'],
-	baseURL = 'https://api.rewritetoday.com/v1',
+	baseURL = DEFAULT_BASE_URL,
 ) => {
-	const url = `${baseURL}/v1${route}`;
+	const normalizedRoute = route.startsWith('/') ? route : `/${route}`;
+	const url = new URL(
+		`${normalizeBaseURL(baseURL)}${API_PATH}${normalizedRoute}`,
+	);
 
-	return query ? `${url}?${new URLSearchParams(query)}` : url;
+	if (query) url.search = new URLSearchParams(query).toString();
+
+	return url.toString();
 };
 
 export const FIVE_SECONDS_IN_MS = 5000;
-
-export const isTimeoutError = (err: unknown) =>
-	(err as { name?: string })?.name === 'TimeoutError';
 
 const RETRYABLE_STATUS = [408, 425, 429, 500, 502, 503, 504];
 

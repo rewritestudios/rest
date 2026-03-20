@@ -3,7 +3,7 @@
 # Rewrite REST
 
 A **REST** client for the **Rewrite API** — fast, secure, and reliable.<br/>
-[@rewritejs/rest](https://www.npmjs.com/package/@rewritejs/rest) is a lightweight, fully typed HTTP client designed to interact seamlessly with the **Rewrite API**.
+[@rewritetoday/rest](https://www.npmjs.com/package/@rewritetoday/rest) is a lightweight, fully typed HTTP client designed to interact seamlessly with the **Rewrite API**.
 
 Built for Node.js, Bun, and modern runtimes, it includes smart retries, timeout control, consistent error handling, and a clean developer experience for sending and managing SMS at scale.
 
@@ -14,11 +14,11 @@ You can use your favorite package manager to install our package
 </div>
 
 ```bash
-npm install @rewritejs/rest
+npm install @rewritetoday/rest
 # Or
-yarn add @rewritejs/rest
+yarn add @rewritetoday/rest
 # Or
-bun add @rewritejs/rest
+bun add @rewritetoday/rest
 ```
 
 <div align="center">
@@ -30,11 +30,11 @@ You can use any route, any method, and any payload to interact with the Rewrite 
 </div>
 
 ```ts
-import { REST } from '@rewritejs/rest';
+import { REST } from '@rewritetoday/rest';
 
 const client = new REST(process.env.REWRITE_API_KEY);
 
-const data = await client.post('/messages', {
+const { data, error } = await client.post('/messages', {
 	data: {
 		to: '+1234567890',
 		message: 'Hey, using REST here',
@@ -54,6 +54,7 @@ By default, our **REST** client try 3 times with a Jitter delay between each att
 
 ```ts
 const client = new REST({
+	timeout: 3_000,
 	auth: process.env.REWRITE_API_KEY,
 	retry: {
 		max: 5,
@@ -61,13 +62,12 @@ const client = new REST({
 			return attempt * 0.5;
 		},
 	},
-	timeout: 3_000,
 });
 ```
 
 <div align="center">
 
-You can also use callback function to execute **before** each request:
+You can also use callback function to execute **before** each retry:
 
 </div>
 
@@ -94,21 +94,17 @@ Our **REST Client** handles errors gracefully and provides a consistent error ha
 </div>
 
 ```ts
-import { REST, HTTPError } from '@rewritejs/rest';
+import { REST, HTTPError } from '@rewritetoday/rest';
 
 const client = new REST(process.env.REWRITE_API_KEY);
 
-try {
-	const data = await client.get('/projects/invalid', {
-		query: {
-			...
-		},
-	});
-} catch (error) {
-	if (error instanceof HTTPError) {
-		console.error({ error });
-	}
+const { data, error } = await client.get('/message/1234567890');
+
+if (error) {
+	console.error({ error });
 }
+
+console.log({ data });
 ```
 
 <div align="center">

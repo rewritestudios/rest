@@ -57,21 +57,3 @@ export class RateLimitError extends HTTPError {
 		this.name = 'RateLimitError';
 	}
 }
-
-/**
- * Error thrown when the API returns a business-level error payload.
- */
-export class RewriteError extends Error {
-	/**
-	 * @param {string} message - User-facing message from the API.
-	 * @param {string} code - API error code.
-	 * @param {object} detailed - Detailed API metadata for the error.
-	 */
-	public constructor(
-		public message: string,
-		public code: string,
-		public detailed: object,
-	) {
-		super(message);
-	}
-}

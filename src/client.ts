@@ -1,10 +1,10 @@
-import { HTTPError, RateLimitError, RewriteError } from './errors';
+import { HTTPError, RateLimitError } from './errors';
 import type {
+	APIResponse,
 	FetchOptions,
 	RateLimitContext,
 	RESTOptions,
 	RequestOptions,
-	RetryOptions,
 	RewriteHandleErrorOptions,
 } from './types';
 import {
@@ -16,6 +16,8 @@ import {
 	sleep,
 } from './utils';
 import { version } from './version';
+
+const DEFAULT_RETRY_MAX = 3;
 
 /**
  * Main class to interact with the Rewrite API.
@@ -29,19 +31,18 @@ export class REST {
 	/**
 	 * The headers to send with each request.
 	 */
-	public headers = {
-		'Content-Type': 'application/json',
-		'User-Agent': `@rewritejs/rest (${version})`,
-	} as Record<string, string>;
+	public headers: Record<string, string>;
 
 	constructor(options: RESTOptions | string) {
-		this.options = typeof options === 'string' ? { auth: options } : options;
-
+		this.options =
+			typeof options === 'string' ? { auth: options } : { ...options };
 		this.headers = {
 			'Content-Type': 'application/json',
+			'User-Agent': `@rewritetoday/rest (${version})`,
 			...this.options.headers,
-			Authorization: `Bearer ${this.options.auth}`,
 		};
+
+		this.setAuth(this.options.auth);
 	}
 
 	/**
@@ -50,6 +51,9 @@ export class REST {
 	 * @param {string} authorization - The API key to use.
 	 */
 	setAuth(authorization: string) {
+		if (typeof authorization !== 'string' || !authorization.startsWith('rw_'))
+			throw new Error('Unknown or invalid API key.');
+
 		this.options.auth = authorization;
 		this.headers.Authorization = `Bearer ${authorization}`;
 
@@ -57,42 +61,53 @@ export class REST {
 	}
 
 	/**
-	 * Runs a GET request from the API.
+	 * Runs a `GET` request from the API.
 	 */
 	public get<R>(route: string, options?: RequestOptions) {
-		return this.fetch<R>(route, { ...options, method: 'GET' });
+		return this.request<R>(route, { ...options, method: 'GET' });
 	}
 
 	/**
-	 * Runs a POST request from the API.
+	 * Runs a `POST` request from the API.
 	 */
 	public post<R>(route: string, data?: unknown, options?: RequestOptions) {
-		return this.fetch<R>(route, { data, ...options, method: 'POST' });
+		return this.request<R>(route, { data, ...options, method: 'POST' });
 	}
 
 	/**
-	 * Runs a DELETE request from the API.
+	 * Runs a `DELETE` request from the API.
 	 */
 	public delete<R>(route: string, options?: RequestOptions) {
-		return this.fetch<R>(route, { ...options, method: 'DELETE' });
+		return this.request<R>(route, { ...options, method: 'DELETE' });
 	}
 
 	/**
-	 * Runs a PUT request from the API.
+	 * Runs a `PUT` request from the API.
 	 */
-	public put<R>(route: string, options?: RequestOptions) {
-		return this.fetch<R>(route, { ...options, method: 'PUT' });
+	public put<R>(route: string, data?: unknown, options?: RequestOptions) {
+		return this.request<R>(route, { data, ...options, method: 'PUT' });
 	}
 
 	/**
-	 * Runs a PATCH request from the API.
+	 * Runs a `PATCH` request from the API.
 	 */
 	public patch<R>(route: string, data?: unknown, options?: RequestOptions) {
-		return this.fetch<R>(route, { data, ...options, method: 'PATCH' });
+		return this.request<R>(route, { data, ...options, method: 'PATCH' });
 	}
 
-	private async fetch<R>(route: string, options: FetchOptions, attempt = 0) {
-		const response = await this.prefetch(route, options);
+	private async request<R>(route: string, options: FetchOptions, attempt = 0) {
+		const timeout =
+			options.timeout ?? this.options.timeout ?? FIVE_SECONDS_IN_MS;
+
+		const response = await fetch(
+			createURL(route, options.query, this.options.baseURL),
+			{
+				method: options.method,
+				headers: { ...this.headers, ...options.headers },
+				signal: AbortSignal.timeout(timeout),
+				body: 'data' in options ? JSON.stringify(options.data) : null,
+			},
+		);
 
 		if (!response.ok)
 			return this.handleError<R>({
@@ -103,9 +118,7 @@ export class REST {
 				method: options.method,
 			});
 
-		const { data } = await response.json();
-
-		return data as R;
+		return (await response.json()) as APIResponse<R>;
 	}
 
 	private async handleError<R>({
@@ -114,32 +127,29 @@ export class REST {
 		options,
 		attempt,
 		response,
-	}: RewriteHandleErrorOptions): Promise<R> {
-		if (!isRetryableStatus(response.status)) {
-			const { code, error, message } = await response.json();
-
-			throw new RewriteError(message, code, error.detailed);
-		}
+	}: RewriteHandleErrorOptions): Promise<APIResponse<R>> {
+		if (!isRetryableStatus(response.status)) return await response.json();
 
 		const { onRateLimit, retry } = this.options;
+
 		const rateLimitContext =
 			response.status === RATE_LIMIT_STATUS
 				? this.parseRateLimitContext(response)
 				: null;
 
-		if (attempt >= (retry?.max ?? 3))
+		if (attempt >= (retry?.max ?? DEFAULT_RETRY_MAX))
 			throw this.buildRetryExceededError(response, method, rateLimitContext);
 
-		if (rateLimitContext && onRateLimit) await onRateLimit(rateLimitContext);
+		if (rateLimitContext) await onRateLimit?.(rateLimitContext);
+		await retry?.onRetry?.({ route, attempt, options, response, method });
 
-		if (retry?.onRetry)
-			await retry.onRetry({ route, attempt, options, response, method });
+		await sleep(
+			rateLimitContext && rateLimitContext.retryAfter > 0
+				? rateLimitContext.retryAfter
+				: (retry?.delay ?? backoff)(attempt),
+		);
 
-		const delay = this.resolveRetryDelay(attempt, retry, rateLimitContext);
-
-		await sleep(delay);
-
-		return this.fetch<R>(route, options, attempt + 1);
+		return this.request<R>(route, options, attempt + 1);
 	}
 
 	/**
@@ -167,27 +177,12 @@ export class REST {
 	}
 
 	/**
-	 * Resolves delay before the next retry attempt.
-	 */
-	private resolveRetryDelay(
-		attempt: number,
-		retry: RetryOptions | undefined,
-		rateLimitContext: RateLimitContext | null,
-	) {
-		const retryAfterDelay = rateLimitContext?.retryAfter ?? 0;
-
-		if (retryAfterDelay > 0) return retryAfterDelay;
-
-		return (retry?.delay ?? backoff)(attempt);
-	}
-
-	/**
 	 * Parses rate-limit headers from a `429` response.
 	 */
 	private parseRateLimitContext(response: Response): RateLimitContext {
 		const { headers } = response;
 
-		const xRateLimitRetryAfter = this.parseNumberHeader(
+		const xRateLimitRetryAfter = this.readNumberHeader(
 			headers,
 			'X-RateLimit-Retry-After',
 		);
@@ -199,27 +194,21 @@ export class REST {
 
 		return {
 			retryAfter,
-			limit: Number(headers.get('X-RateLimit-Limit')),
-			isGlobal: this.parseBooleanHeader(headers, 'X-RateLimit-Global'),
+			limit: this.readNumberHeader(headers, 'X-RateLimit-Limit'),
+			isGlobal: headers.get('X-RateLimit-Global')?.toLowerCase() === 'true',
 		};
 	}
 
 	/**
 	 * Parses a numeric header and safely falls back to `0`.
 	 */
-	private parseNumberHeader(headers: Headers, key: string) {
+	private readNumberHeader(headers: Headers, key: string) {
 		const value = headers.get(key);
 		if (!value) return 0;
 
 		const parsed = Number(value);
-		return Number.isFinite(parsed) ? parsed : 0;
-	}
 
-	/**
-	 * Parses a boolean-like header.
-	 */
-	private parseBooleanHeader(headers: Headers, key: string) {
-		return headers.get(key)?.toLowerCase() === 'true';
+		return Number.isFinite(parsed) ? parsed : 0;
 	}
 
 	/**
@@ -235,18 +224,5 @@ export class REST {
 		const date = Date.parse(header);
 
 		return Number.isNaN(date) ? 0 : Math.max(0, date - Date.now());
-	}
-
-	private prefetch(route: string, options: FetchOptions) {
-		const timeout =
-			options.timeout ?? this.options.timeout ?? FIVE_SECONDS_IN_MS;
-		const url = createURL(route, options.query, this.options.baseURL);
-
-		return fetch(url, {
-			method: options.method,
-			signal: AbortSignal.timeout(timeout),
-			headers: { ...this.headers, ...options.headers },
-			body: 'data' in options ? JSON.stringify(options.data) : null,
-		});
 	}
 }

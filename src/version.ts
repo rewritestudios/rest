@@ -1,9 +1,10 @@
 // AUTO-GENERATED — DO NOT EDIT
 
 /**
- * Current version of [@rewritejs/rest](https://www.npmjs.com/package/@rewritejs/rest).
+ * Current version of [@rewritetoday/rest](https://www.npmjs.com/package/@rewritetoday/rest).
  */
-export const version = '1.0.1' as const;
+export const version = '1.0.0' as const;
+
 /**
  * Current version of the Rewrite API.
  */

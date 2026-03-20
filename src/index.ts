@@ -1,6 +1,7 @@
 export { REST } from './client';
 export * from './errors';
-export {
+export type {
+	APIResponse,
 	FetchOptions,
 	HTTPMethodLike,
 	RateLimitContext,
