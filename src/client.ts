@@ -1,6 +1,5 @@
 import { HTTPError, RateLimitError } from './errors';
 import type {
-	APIResponse,
 	FetchOptions,
 	RateLimitContext,
 	RESTOptions,
@@ -118,7 +117,7 @@ export class REST {
 				method: options.method,
 			});
 
-		return (await response.json()) as APIResponse<R>;
+		return (await response.json()) as R;
 	}
 
 	private async handleError<R>({
@@ -127,7 +126,7 @@ export class REST {
 		options,
 		attempt,
 		response,
-	}: RewriteHandleErrorOptions): Promise<APIResponse<R>> {
+	}: RewriteHandleErrorOptions): Promise<R> {
 		if (!isRetryableStatus(response.status)) return await response.json();
 
 		const { onRateLimit, retry } = this.options;
@@ -190,7 +189,7 @@ export class REST {
 		const retryAfter =
 			xRateLimitRetryAfter > 0
 				? xRateLimitRetryAfter
-				: this.parseRetryAfterHeader(headers.get('Retry-After'));
+				: this.parseRetryAfterHeader(headers.get('X-RateLimit-Retry-After'));
 
 		return {
 			retryAfter,
@@ -212,7 +211,7 @@ export class REST {
 	}
 
 	/**
-	 * Parses the `Retry-After` header and returns delay in milliseconds.
+	 * Parses the `X-RateLimit-Retry-After` header and returns delay in milliseconds.
 	 */
 	private parseRetryAfterHeader(header: string | null) {
 		if (!header) return 0;

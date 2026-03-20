@@ -28,22 +28,6 @@ export interface RESTOptions {
 	onRateLimit?(context: RateLimitContext): unknown;
 }
 
-export type APIResponse<Data> =
-	| {
-			ok: true;
-			data: Data;
-			error: undefined;
-	  }
-	| {
-			ok: false;
-			data: undefined;
-			error: {
-				code: string;
-				message: string;
-				detailed?: object;
-			};
-	  };
-
 /**
  * Context passed to the `onRateLimit` callback.
  */
